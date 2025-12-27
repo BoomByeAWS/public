@@ -6,7 +6,7 @@
 
 ## 📋 OBJETIVO
 
-Crear un chatbot RAG (Retrieval Augmented Generation) para responder preguntas de filosofía usando ~4,000 artículos de WordPress como base de conocimiento.
+Crear un chatbot RAG (Retrieval Augmented Generation) para responder preguntas de filosofía usando ~4,000 artículos de WordPress (www.filosofia.mx) como base de conocimiento.
 
 ### Prioridades
 
