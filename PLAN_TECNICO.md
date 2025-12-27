@@ -4,6 +4,112 @@
 
 ---
 
+## 📋 Tabla de Contenidos
+
+### 🎯 Información General
+- [Objetivo](#-objetivo)
+- [Estimado de Costo Mensual](#-estimado-de-costo-mensual)
+
+### 🏗️ Arquitectura e Infraestructura
+- [Arquitectura (Stack MLOps Completo)](#️-arquitectura-stack-mlops-completo)
+  - [Procesamiento de Updates](#procesamiento-de-updates-wordpress--pubsub--cloud-run)
+  - [Notas Clave](#notas-clave-cambios-v3)
+
+### 🤖 Agent Loop (Query Rewriting)
+- [Agentic Layer](#-agentic-layer-nuevo---explícito-y-corregido)
+- [Agent Loop: Query Rewriting](#-agent-loop-query-rewriting)
+  - [Objetivo](#objetivo)
+  - [Condiciones de Activación](#condiciones-de-activación-heurísticas-pre-retrieval)
+  - [Costo Real por Request](#costo-real-por-request-con-query-rewriting)
+  - [Configuración](#configuración-relacionada-cfg)
+- [Estrategias de Rewriting](#-estrategias-de-rewriting-por-tipo-de-pregunta)
+- [Flujo del Agent Loop](#-flujo-del-agent-loop-plan--act--observe--decide)
+- [Evaluación del Agent Loop](#-evaluación-del-agent-loop)
+- [Integración en Pipeline RAG](#-integración-en-el-pipeline-rag-principal)
+
+### 💻 Componentes Técnicos
+- [Control de Consumo (Guardrails)](#-control-de-consumo-guardrails)
+- [Modelos de IA](#-modelos-de-ia)
+  - [Generación (LLM)](#generación-llm)
+  - [Embeddings](#embeddings)
+  - [Rate Limiting Vertex AI](#rate-limiting-vertex-ai)
+- [Chunking Strategy](#-chunking-strategy)
+- [Base Vectorial (Qdrant Cloud)](#️-base-vectorial-qdrant-cloud)
+  - [Colección Principal](#colección-principal-filosofia_chunks)
+  - [Qdrant Point IDs (UUID v5)](#qdrant-point-ids-uuid-v5)
+  - [Estrategia de Actualización](#estrategia-de-actualización)
+- [Cache + Contadores (Upstash Redis)](#-cache--contadores-upstash-redis)
+  - [Schemas de Cache](#schemas-de-cache)
+  - [Config Management](#config-management)
+  - [Locks Distribuidos](#locks-distribuidos)
+- [Cloud Storage](#️-cloud-storage)
+- [BigQuery (Analytics y Feedback)](#-bigquery-analytics-y-feedback)
+  - [Configuración del Sink](#configuración-del-sink)
+  - [Consultas Útiles](#consultas-útiles-para-agent-loop)
+
+### 📊 Observabilidad y Monitoreo
+- [Observabilidad (OpenTelemetry + Cloud Trace)](#-observabilidad-opentelemetry--cloud-trace)
+  - [OpenTelemetry Trace Format](#opentelemetry-trace-format-en-cloud-logging)
+  - [Spans Instrumentados](#spans-instrumentados-actualizado-con-agent-loop)
+- [SLOs y Thresholds](#-slos-y-thresholds-actualizado-con-agent-loop)
+  - [Latencia](#latencia)
+  - [Error Rate](#error-rate)
+  - [Cache Performance](#cache-performance)
+  - [Quality Metrics](#quality-metrics)
+  - [Agent Loop](#agent-loop-nuevo)
+- [Métricas de Calidad del RAG (MLOps)](#-métricas-de-calidad-del-rag-mlops)
+  - [Retrieval](#retrieval)
+  - [Generación](#generación)
+  - [Golden Dataset Schema](#golden-dataset-schema)
+  - [Método de Evaluación: LLM-as-judge](#método-de-evaluación-llm-as-judge)
+
+### 🔧 Configuración y Gestión
+- [Versionado de Prompts](#-versionado-de-prompts)
+- [Logging Estructurado](#-logging-estructurado)
+- [Sistema de Feedback Loop](#-sistema-de-feedback-loop)
+- [Data Drift Detection](#-data-drift-detection)
+
+### 🚀 Deployment y Operaciones
+- [CI/CD Pipeline](#-cicd-pipeline)
+  - [GitHub Actions](#github-actions)
+  - [Versionado de Imágenes](#versionado-de-imágenes)
+- [Procesamiento de Updates (WordPress → Pub/Sub)](#-procesamiento-de-updates-wordpress--pubsub)
+  - [WordPress Hook](#wordpress-hook-save_post)
+  - [Pub/Sub Configuration](#pubsub-configuration)
+  - [Cloud Run Consumer](#cloud-run-consumer)
+
+### 🔐 Seguridad
+- [Seguridad y Autenticación](#-seguridad-y-autenticación)
+  - [API Gateway v2](#api-gateway-v2)
+  - [Cloud Run](#cloud-run)
+  - [Secret Manager](#secret-manager)
+  - [Rate Limiting Server-Side](#rate-limiting-server-side)
+
+### 🎨 Implementación RAG
+- [Estrategia RAG (Optimizada)](#-estrategia-rag-optimizada)
+- [Flujo Completo del Sistema](#-flujo-completo-del-sistema)
+  - [Chat](#chat)
+  - [Updates de Artículos](#updates-de-artículos)
+  - [Jobs](#jobs)
+
+### 📅 Planificación
+- [Plan de Ejecución](#-plan-de-ejecución)
+  - [Fase 1: Setup y Fundación (Día 1-2)](#fase-1-setup-y-fundación-día-1-2)
+  - [Fase 2: Data Pipeline (Día 3)](#fase-2-data-pipeline-día-3)
+  - [Fase 3: Motor RAG + Agent Loop + MLOps (Día 4-5)](#fase-3-motor-rag--agent-loop--mlops-día-4-5)
+  - [Fase 4: Frontend + Integración (Día 6)](#fase-4-frontend--integración-día-6)
+  - [Fase 5: CI/CD + Operación (Día 7)](#fase-5-cicd--operación-día-7)
+- [Cuotas y Límites](#-cuotas-y-límites)
+- [Próximos Pasos Post-Lanzamiento](#-próximos-pasos-post-lanzamiento)
+  - [Semana 1-2](#semana-1-2)
+  - [Mes 1](#mes-1)
+  - [Ongoing](#ongoing)
+
+### 📚 Referencias
+- [Recursos Adicionales](#-recursos-adicionales)
+
+---
+
 ## 📋 OBJETIVO
 
 Crear un chatbot RAG (Retrieval Augmented Generation) para responder preguntas de filosofía usando ~4,000 artículos de WordPress (www.filosofia.mx) como base de conocimiento.
@@ -17,9 +123,47 @@ Crear un chatbot RAG (Retrieval Augmented Generation) para responder preguntas d
 - ✅ Buena experiencia de usuario
 - ✅ Comportamiento Agentic explícito y medible
 
-**SITIO:** filosofia.mx  
+**SITIO:** filosofia.mx
 
-Costo Recurrente Mensual entre $25 y $65 USD/mes
+---
+
+## 💰 Estimado de Costo Mensual
+
+### Costo Recurrente Mensual
+
+**$25 - $65 USD/mes**
+
+- **Escenario optimista** (free tiers): ~$25/mes
+- **Escenario realista**: ~$45/mes  
+- **Escenario conservador**: ~$65/mes
+
+### Costo Inicial (One-Time)
+
+**~$40 USD** (embeddings iniciales del corpus completo)
+
+### Desglose por Componente
+
+| Componente | Costo Mensual | Notas |
+|------------|---------------|-------|
+| **Vertex AI (LLM)** | $15-35 | Depende del tráfico y uso de agent loop |
+| **Vertex AI (Embeddings)** | $5-10 | Batch processing + agent loop queries |
+| **Qdrant Cloud** | $0-10 | Free tier hasta 1GB |
+| **Upstash Redis** | $0 | Free tier 10K commands/day |
+| **Cloud Run** | $0-5 | Free tier + mínimo uso |
+| **BigQuery** | $0-5 | Free tier 1TB queries/mes |
+| **Cloud Storage** | $0-2 | Mínimo almacenamiento |
+| **Cloud Logging** | $0-3 | Free tier 50GB/mes |
+| **Pub/Sub** | $0 | Free tier suficiente |
+| **API Gateway** | $0 | Free tier 2M calls/mes |
+
+### Consideraciones de Costo
+
+- **Agent Loop Impact:** Cuando activo (~20-40% requests), incrementa costos ~3x por request afectado
+- **Cache Strategy:** Hit ratio del 30-50% reduce significativamente costos de LLM
+- **Tráfico estimado:** 5,000-10,000 requests/mes para estos estimados
+- **Escalamiento:** Costos aumentan linealmente con tráfico después de free tiers
+
+**Nota:** Estimaciones conservadoras. El uso de free tiers y caché efectivo puede mantener costos en el rango bajo.
 
 ---
 
@@ -1489,3 +1633,8 @@ profunda → AGENT LOOP → Qdrant (3-5 chunks) → Pro
 - [Qdrant Documentation](https://qdrant.tech/documentation/)
 - [OpenTelemetry Python](https://opentelemetry.io/docs/instrumentation/python/)
 - [Upstash Redis](https://docs.upstash.com/redis)
+
+---
+
+**Última actualización:** 2025-12-27  
+**Versión:** V3 (Final)
