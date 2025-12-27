@@ -19,12 +19,7 @@ Crear un chatbot RAG (Retrieval Augmented Generation) para responder preguntas d
 
 **SITIO:** filosofia.mx  
 
-Costo Recurrente Mensual
-$25 - $65 USD/mes
-
-Escenario optimista (free tiers): ~$25/mes
-Escenario realista: ~$45/mes
-Escenario conservador: ~$65/mes
+Costo Recurrente Mensual entre $25 y $65 USD/mes
 
 ---
 
