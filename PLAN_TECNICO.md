@@ -13,10 +13,10 @@
 ### 🏗️ Arquitectura e Infraestructura
 - [Arquitectura (Stack MLOps Completo)](#️-arquitectura-stack-mlops-completo)
   - [Procesamiento de Updates](#procesamiento-de-updates-wordpress--pubsub--cloud-run)
-  - [Notas Clave](#notas-clave-cambios-v3)
+  - [Notas Clave](#notas-clave)
 
 ### 🤖 Agent Loop (Query Rewriting)
-- [Agentic Layer](#-agentic-layer-nuevo---explícito-y-corregido)
+- [Agentic Layer](#-agentic-layer)
 - [Agent Loop: Query Rewriting](#-agent-loop-query-rewriting)
   - [Objetivo](#objetivo)
   - [Condiciones de Activación](#condiciones-de-activación-heurísticas-pre-retrieval)
@@ -50,13 +50,13 @@
 ### 📊 Observabilidad y Monitoreo
 - [Observabilidad (OpenTelemetry + Cloud Trace)](#-observabilidad-opentelemetry--cloud-trace)
   - [OpenTelemetry Trace Format](#opentelemetry-trace-format-en-cloud-logging)
-  - [Spans Instrumentados](#spans-instrumentados-actualizado-con-agent-loop)
-- [SLOs y Thresholds](#-slos-y-thresholds-actualizado-con-agent-loop)
+  - [Spans Instrumentados](#spans-instrumentados-con-agent-loop)
+- [SLOs y Thresholds](#-slos-y-thresholds)
   - [Latencia](#latencia)
   - [Error Rate](#error-rate)
   - [Cache Performance](#cache-performance)
   - [Quality Metrics](#quality-metrics)
-  - [Agent Loop](#agent-loop-nuevo)
+  - [Agent Loop](#agent-loop)
 - [Métricas de Calidad del RAG (MLOps)](#-métricas-de-calidad-del-rag-mlops)
   - [Retrieval](#retrieval)
   - [Generación](#generación)
@@ -202,15 +202,15 @@ Pub/Sub topic: filosofia-article-updated
 Cloud Run consumer (procesa embeddings y actualiza Qdrant)
 ```
 
-### Notas Clave (Cambios V3)
+### Notas Clave
 
-- **API Gateway:** Usar API Gateway v2 (más reciente, mejor integración)
+- **API Gateway:** API Gateway v2 para mejor integración con Cloud Run
 - **BigQuery:** Logs exportados desde Cloud Logging a tabla específica `filosofia_rag_logs`
-- **Webhooks:** Ya NO son sync; ahora devuelven 202 y publican a Pub/Sub
+- **Webhooks:** Asíncronos vía Pub/Sub (devuelven 202)
 - **Locks:** Lock con token + heartbeat para evitar races
 - **Deduplicación:** event_id único para idempotencia en Pub/Sub
 - **Config keys:** Estándar único `cfg:*` y validación con Pydantic
-- **Secretos:** NO usar service-account key; usar IAM nativo de Cloud Run
+- **Secretos:** IAM nativo de Cloud Run (no service-account keys)
 - **Qdrant Point IDs:** UUID v5 determinístico basado en `post_id:chunk_index`
 - **OpenTelemetry:** Formato GCP para correlación `logging.googleapis.com/trace`
 - **CI/CD:** GitHub Actions con versionado semántico multi-tag
@@ -218,7 +218,7 @@ Cloud Run consumer (procesa embeddings y actualiza Qdrant)
 
 ---
 
-## 🤖 AGENTIC LAYER (NUEVO - EXPLÍCITO Y CORREGIDO)
+## 🤖 AGENTIC LAYER
 
 El sistema incluye un **Agent Loop mínimo y determinístico**, sin frameworks, diseñado para mejorar retrieval y demostrar razonamiento operacional.
 
@@ -494,7 +494,7 @@ agent_loop_slos:
 
 ## 🔧 INTEGRACIÓN EN EL PIPELINE RAG PRINCIPAL
 
-### Pipeline Actualizado (con Agent Loop)
+### Pipeline con Agent Loop
 
 ```
 1. Usuario pregunta
@@ -521,7 +521,7 @@ agent_loop_slos:
 - Número de requests
 - Tokens estimados (input + output)
 - Proyección mensual estimada
-- **Agent loop invocations** (con overhead asociado)
+- Agent loop invocations (con overhead asociado)
 
 ### Umbrales Configurables
 
@@ -529,7 +529,7 @@ agent_loop_slos:
 cfg:alert_threshold: [valor]
 cfg:critical_threshold: [valor]
 cfg:models_enabled: true
-cfg:agent_query_rewrite_enabled: true  # Nuevo
+cfg:agent_query_rewrite_enabled: true
 ```
 
 ### Acción al Alcanzar Umbral Crítico
@@ -665,7 +665,7 @@ def generate_point_id(post_id: int, chunk_index: int) -> str:
 
 ### Estrategia de Actualización
 
-**Opción A (recomendada):** IDs determinísticos + upsert directo
+**IDs determinísticos + upsert directo**
 
 - `point_id` = UUID v5 de `{post_id}:{chunk_index}`
 - Upsert reemplaza el punto sin delete masivo
@@ -876,13 +876,13 @@ def add_trace_context(logger, method_name, event_dict):
     return event_dict
 ```
 
-### Spans Instrumentados (Actualizado con Agent Loop)
+### Spans Instrumentados (con Agent Loop)
 
 ```
 root_span: POST /chat
 ├── classify_question (300ms)
 ├── cache_lookup_response (40ms)
-├── agent_query_rewrite_loop (1500ms)  # NUEVO
+├── agent_query_rewrite_loop (1500ms)
 │   ├── should_rewrite_heuristic (10ms)
 │   ├── generate_rewrites (600ms)
 │   │   └── vertex_ai_flash_api (580ms)
@@ -899,7 +899,7 @@ Total: ~5000ms (vs ~3500ms sin agent loop)
 
 ---
 
-## 🎯 SLOs Y THRESHOLDS (ACTUALIZADO CON AGENT LOOP)
+## 🎯 SLOs Y THRESHOLDS
 
 ### Latencia
 
@@ -950,7 +950,7 @@ quality:
   window: 24h
 ```
 
-### Agent Loop (NUEVO)
+### Agent Loop
 
 ```yaml
 agent_loop:
@@ -993,7 +993,7 @@ agent_loop:
 - Fidelidad / groundedness
 - Relevancia
 
-### Agent Loop (NUEVO)
+### Agent Loop
 
 - Activation rate
 - Success rate (mejora en similarity)
@@ -1023,7 +1023,7 @@ agent_loop:
       "expected_chunks": [...],
       "difficulty": "alta",
       "category": "comparativa",
-      "expects_agent_rewrite": true  // NUEVO
+      "expects_agent_rewrite": true
     }
   ]
 }
@@ -1090,7 +1090,7 @@ class PromptManager:
 
 ## 📝 LOGGING ESTRUCTURADO
 
-### Formato jsonPayload (Actualizado con Agent Fields)
+### Formato jsonPayload (con Agent Fields)
 
 ```json
 {
@@ -1573,7 +1573,7 @@ profunda → AGENT LOOP → Qdrant (3-5 chunks) → Pro
 **Runbooks + Alerts:**
 - Error rate, latency, cache hit
 - Quality drop, drift
-- **Agent loop performance**
+- Agent loop performance
 - SLO violations
 
 **ENTREGABLE:**
@@ -1637,4 +1637,4 @@ profunda → AGENT LOOP → Qdrant (3-5 chunks) → Pro
 ---
 
 **Última actualización:** 2025-12-27  
-**Versión:** V3 (Final)
+**Versión:** 1.0
